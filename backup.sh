@@ -17,9 +17,9 @@ ROOT_PATH='/srv/public_html'
 BACKUP_PATH='/srv/backups'
 MYSQL_HOST='mysql'
 MYSQL_PORT='3306'
-MYSQL_USER=$1
-MYSQL_PASSWORD=$3
-DATABASE_NAME=$2
+MYSQL_USER='user_uuid'
+MYSQL_PASSWORD='password'
+DATABASE_NAME='db_uuid'
 BACKUP_RETAIN_DAYS=30   ## Number of days to keep local backup copy
 
 #################################################################
