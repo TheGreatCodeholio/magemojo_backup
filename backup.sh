@@ -44,7 +44,7 @@ cd ${BACKUP_PATH}/${TODAY}
 
 echo -e "\e[33mSite Backup started for - ${ROOT_PATH}\e[0m"
 echo -e "\e[92mNot including logs, as they can change while compressing.\e[0m"
-tar -czf html_${TODAY}.tar.gz ${ROOT_PATH}
+tar -czf --exclude="${ROOT_PATH}/var/log" html_${TODAY}.tar.gz ${ROOT_PATH}
 
 if [ $? -eq 0 ]; then
   echo -e "\e[92mSite backup successfully completed\e[0m"
