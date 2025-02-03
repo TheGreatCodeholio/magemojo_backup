@@ -27,7 +27,7 @@ BACKUP_RETAIN_DAYS=30   ## Number of days to keep local backup copy
 mkdir -p ${BACKUP_PATH}/${TODAY}
 echo -e "\e[33mDatabase Backup started for - ${DATABASE_NAME}\e[0m"
 
-mysqldump --skip-lock-tables --single-transaction -h ${MYSQL_HOST} \
+mysqldump --single-transaction --quick --routines --trigger -h ${MYSQL_HOST} \
    -P ${MYSQL_PORT} \
    -u root \
    -p${MYSQL_PASSWORD} \
