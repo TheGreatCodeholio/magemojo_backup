@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 ################################################################
 ##
@@ -9,7 +10,7 @@
 ################################################################
 
 export PATH=/bin:/usr/bin:/usr/local/bin
-TODAY=`date +"%d%b%Y"`
+TODAY="$(date +"%d%b%Y")"
 
 ################################################################
 ################## Update below values  ########################
@@ -17,51 +18,49 @@ ROOT_PATH='/srv/public_html'
 BACKUP_PATH='/srv/backups'
 MYSQL_HOST='mysql'
 MYSQL_PORT='3306'
-MYSQL_USER='user_uuid'
+MYSQL_USER='root'
 MYSQL_PASSWORD='password'
 DATABASE_NAME='db_uuid'
-BACKUP_RETAIN_DAYS=30   ## Number of days to keep local backup copy
-
+BACKUP_RETAIN_DAYS=30
 #################################################################
 
-mkdir -p ${BACKUP_PATH}/${TODAY}
-echo -e "\e[33mDatabase Backup started for - ${DATABASE_NAME}\e[0m"
+# Create backup directory for today's date
+mkdir -p "${BACKUP_PATH}/${TODAY}"
 
-mysqldump --single-transaction --quick --routines --trigger -h ${MYSQL_HOST} \
-   -P ${MYSQL_PORT} \
-   -u root \
-   -p${MYSQL_PASSWORD} \
-   ${DATABASE_NAME} > ${BACKUP_PATH}/${TODAY}/db_${TODAY}.sql
+echo -e "\e[33m[INFO] Starting database backup for ${DATABASE_NAME}\e[0m"
 
-if [ $? -eq 0 ]; then
-  echo -e "\e[92mDatabase backup successfully completed\e[0m"
+mysqldump --single-transaction --quick --routines --triggers \
+  -h "${MYSQL_HOST}" \
+  -P "${MYSQL_PORT}" \
+  -u "${MYSQL_USER}" \
+  -p"${MYSQL_PASSWORD}" \
+  "${DATABASE_NAME}" > "${BACKUP_PATH}/${TODAY}/db_${TODAY}.sql"
+
+echo -e "\e[92m[INFO] Database backup completed successfully.\e[0m"
+
+# Change to today's backup directory
+cd "${BACKUP_PATH}/${TODAY}"
+
+echo -e "\e[33m[INFO] Starting site backup for ${ROOT_PATH}, excluding 'var' folder.\e[0m"
+
+# Create a tar.gz of the site, excluding the entire var directory
+tar --exclude="${ROOT_PATH}/var" -czf "html_${TODAY}.tar.gz" "${ROOT_PATH}"
+
+echo -e "\e[92m[INFO] Site backup completed successfully.\e[0m"
+
+################################################################
+# Remove backups older than BACKUP_RETAIN_DAYS
+################################################################
+echo -e "\e[33m[INFO] Removing backups older than ${BACKUP_RETAIN_DAYS} days.\e[0m"
+OLD_DATE="$(date +"%d%b%Y" --date="${BACKUP_RETAIN_DAYS} days ago")"
+
+# Only proceed if the directory exists
+if [ -d "${BACKUP_PATH}/${OLD_DATE}" ]; then
+  rm -rf "${BACKUP_PATH:?}/${OLD_DATE}"
+  echo -e "\e[92m[INFO] Removed ${BACKUP_PATH}/${OLD_DATE}.\e[0m"
 else
-  echo -e "\e[31mError found during backup\e[0m"
-  exit 1
+  echo -e "\e[33m[INFO] No backups found for ${OLD_DATE}.\e[0m"
 fi
 
-cd ${BACKUP_PATH}/${TODAY}
-
-echo -e "\e[33mSite Backup started for - ${ROOT_PATH}\e[0m"
-echo -e "\e[92mNot including logs, as they can change while compressing.\e[0m"
-tar --exclude="${ROOT_PATH}/var/log" -czf html_${TODAY}.tar.gz ${ROOT_PATH}
-
-if [ $? -eq 0 ]; then
-  echo -e "\e[92mSite backup successfully completed\e[0m"
-else
-  echo -e "\e[31mError found during backup\e[0m"
-  exit 1
-fi
-
-##### Remove backups older than {BACKUP_RETAIN_DAYS} days  #####
-
-DBDELDATE=`date +"%d%b%Y" --date="${BACKUP_RETAIN_DAYS} days ago"`
-
-if [ ! -z ${BACKUP_PATH} ]; then
-      cd ${BACKUP_PATH}
-      if [ ! -z ${DBDELDATE} ] && [ -d ${DBDELDATE} ]; then
-            rm -rf ${DBDELDATE}
-      fi
-fi
-
-### End of script ####
+echo -e "\e[92m[INFO] Backup script completed successfully!\e[0m"
+exit 0
